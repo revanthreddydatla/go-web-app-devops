@@ -1,0 +1,94 @@
+name: CI
+on:
+  push:
+    branches:
+      - main
+    ignorePaths:
+      - "README.md"
+      - "helm/**"
+      - "k8s/**"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Code checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Go
+        uses: actions/setup-go@v7
+        with:
+          # Version or version range of Go to use
+          go-version: '1.22.5'
+      
+      - name: build binary
+        run: go build -o go-web-app
+
+      - name: Test
+        run: go test ./...
+
+  code-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: code checkout
+        uses: actions/checkout@v7
+      
+      - uses: actions/setup-go@v7
+        with:
+          go-version: '1.22.5'
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.13
+    
+  push:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v7
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          push: true
+          context: .
+          # file: './Dockerfile'  
+          tags: ${{ vars.DOCKERHUB_USERNAME }}/go-web-app:${{ github.run_id }}
+
+  update-new-tag-in-helm-chart:
+    runs-on: ubuntu-latest
+    needs: push
+    steps:
+      - name: checkout
+        uses: actions/checkout@v7
+
+      - name: update tag
+        env:
+          NEW_TAG: ${{ github.run_id }} # Or any tag version like 'v2.0.0'
+        run: |
+          # Use yq to update the tag in place
+          yq -i ".image.tag = \"${{ env.NEW_TAG }}\"" helm/go-web-app-chart/values.yaml
+    
+      - name: commit and push
+        run: |
+          git config --global user.name ""
+          git config --global user.email ""
+          git add helm/go-web-app-chart/values.yaml
+          git commit -m "chore: update image tag to ${{ github.sha }}"
+          git push
+
+
+# job failure scenarios?
+# access restriction to workflow execution
+# 
