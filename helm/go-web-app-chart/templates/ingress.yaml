@@ -6,7 +6,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: go-web-app.local
+    - #host: go-web-app.local
       http:
         paths:
           - path: /
@@ -14,4 +14,8 @@ spec:
             backend:
               service:
                 name: go-web-app
+                port:
+                  number: 8080
+
+
 

@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-	name: go-web-app
+  name: go-web-app
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
