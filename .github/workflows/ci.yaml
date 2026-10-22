@@ -7,6 +7,7 @@ on:
       - "README.md"
       - "helm/**"
       - "k8s/**"
+    workflow_dispatch: # <-- Add this line to enable manual runs
 
 jobs:
   build:
