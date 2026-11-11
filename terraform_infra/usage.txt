@@ -1,0 +1,30 @@
+This terraform scripts creates aws vpc and eks cluster
+$ aws login 
+$ terraform init 
+$ terraform apply  
+
+later to work with cluster using kubectl
+$ aws eks update-kubeconfig --region <region-code> --name <cluster-name>
+ex: aws eks update-kubeconfig --region "ap-south-2" --name "my-eks-cluster"
+
+Now the cluster is ready and we can place our workload
+-------------------------------------------------------------------------------------
+
+Lets make sure go-web-app dependencies are ready in the cluster.
+
+Dependencies of workload:
+1 Our workload needs dockerhub registry creds
+$ kubectl create secret docker-registry regcred \
+  --docker-server=https://docker.io \
+  --docker-username=revanthreddydatla \
+  --docker-password=<YOUR-PASSWORD> \
+  --docker-email=revanthcomputer@gmail.com
+2 Needs Gateway API enabled in cluster 
+(Note: Ensure aws cli version supports GatewayAPI)
+
+# Enable gatewayApi 
+$ aws eks update-cluster-config --name "my-eks-cluster" --kubernetes-network-config '{"elasticLoadBalancing":{"enabled":true,"gatewayApi":{"crds":{"managed":true}}}}'
+kubectl delete -f httproute.yaml
+kubectl delete -f gateway.yaml
+kubectl delete -f gatewayclass.yaml
+kubectl delete -f service.yaml
